@@ -261,6 +261,16 @@ gh codespace list
 
 Macで作成したCodespaceと同じ環境にSSH接続できる。
 
+### スマホ / Termux で Codespace 名が省略される場合
+
+`gh codespace list` は端末幅が狭いと Codespace 名が省略表示されることがある。
+
+Codespace 名だけをフル表示する場合:
+
+```bash
+gh codespace list --json name --jq '.[].name'
+```
+
 ```bash
 gh codespace ssh -c <CODESPACE_NAME>
 ```
