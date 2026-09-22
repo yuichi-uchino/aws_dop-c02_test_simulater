@@ -52,6 +52,16 @@ class QuizCliTests(unittest.TestCase):
         self.assertNotIn("answers", question)
         self.assertNotIn("explanation", question)
 
+    def test_draw_official_source_excludes_other_questions(self):
+        questions = [
+            {**QUESTIONS[0], "source": "questions/upload/AWS-Certified-DevOps-Engineer-Professional_Sample-Questions.pdf"},
+            {**QUESTIONS[1], "source": "questions/upload/sakitoo.com_dop-c02-mondaishu.html"},
+        ]
+        self.bank.write_text(json.dumps(questions, ensure_ascii=False), encoding="utf-8")
+        result = self.run_cli("draw", "--source", "official")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["id"], "one")
+
     def test_multiple_answers_are_order_independent_and_exact(self):
         correct = self.run_cli("grade", "two", "C,A")
         numbered = self.run_cli("grade", "two", "3,1")
@@ -68,6 +78,7 @@ class QuizCliTests(unittest.TestCase):
     def test_interactive_quiz_accepts_input_and_reports_score(self):
         result = self.run_cli("play", input_text="1\n\n1\n")
         self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("非推奨", result.stderr)
         self.assertIn("正解:", result.stdout)
         self.assertIn("解説:", result.stdout)
         self.assertIn("結果:", result.stdout)

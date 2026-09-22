@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 DEFAULT_BANK = Path(__file__).resolve().parents[1] / "questions" / "questions.json"
+OFFICIAL_SAMPLE_SOURCE = "questions/upload/AWS-Certified-DevOps-Engineer-Professional_Sample-Questions.pdf"
 
 
 def load_questions(path):
@@ -100,13 +101,21 @@ def play(questions):
     print(f"結果: {score}/{total} 問正解")
 
 
+def select_source(questions, source):
+    if source == "official":
+        return [item for item in questions if item.get("source") == OFFICIAL_SAMPLE_SOURCE]
+    return questions
+
+
 def main():
     parser = argparse.ArgumentParser(description="DOP-C02 問題集 CLI")
     parser.add_argument("--bank", type=Path, default=DEFAULT_BANK, help="問題集 JSON ファイル")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("validate", help="問題集を検証")
-    commands.add_parser("play", help="対話形式で出題")
+    play_command = commands.add_parser("play", help="非推奨: 元の選択肢で対話形式の出題")
+    play_command.add_argument("--source", choices=("all", "official"), default="all")
     draw = commands.add_parser("draw", help="ランダムな問題を JSON で出力")
+    draw.add_argument("--source", choices=("all", "official"), default="all")
     draw.add_argument("--exclude", action="append", default=[], help="出題済み ID")
     check = commands.add_parser("grade", help="回答を採点して JSON で出力")
     check.add_argument("id", help="問題 ID")
@@ -119,9 +128,17 @@ def main():
         elif not questions:
             raise ValueError("問題がありません。questions/questions.json に問題を追加してください")
         elif args.command == "play":
-            play(questions)
+            selected = select_source(questions, args.source)
+            if not selected:
+                raise ValueError("指定した出典の問題がありません")
+            print(
+                "注意: Python の play モードは非推奨です。選択肢を調整できないため、"
+                "Codex の $dop-c02-quiz を使用してください。",
+                file=sys.stderr,
+            )
+            play(selected)
         elif args.command == "draw":
-            available = [q for q in questions if q["id"] not in args.exclude]
+            available = [q for q in select_source(questions, args.source) if q["id"] not in args.exclude]
             if not available:
                 raise ValueError("未出題の問題がありません")
             item = random.SystemRandom().choice(available)
